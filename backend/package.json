@@ -1,0 +1,16 @@
+{
+  "name": "agent-quickstart-flutter-backend",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node src/server.js",
+    "start": "node src/server.js",
+    "lint": "node --check src/server.js"
+  },
+  "dependencies": {
+    "agora-agents": "^2.0.1",
+    "agora-token": "^2.0.5",
+    "dotenv": "^16.4.5"
+  }
+}
+

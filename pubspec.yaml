@@ -9,7 +9,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  agora_rtc_engine: ^6.5.0
+  agora_rtc_engine: ^6.6.3
   agora_rtm: ^2.2.0
   http: ^1.6.0
   permission_handler: ^11.3.1

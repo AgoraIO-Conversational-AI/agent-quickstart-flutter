@@ -34,14 +34,14 @@ Getting started is straightforward: bind the app to an Agora project, install de
    cd backend && npm install && npm run dev
    ```
 
-   In a second terminal from the repo root:
+   In a second terminal from the repo root, run the Flutter app. It loads the public Agora App ID from the backend companion, which in turn reads the repo-root `.env.local` file automatically:
 
    ```bash
    flutter pub get
    flutter run -d chrome
    ```
 
-4. Open the app in the target platform and continue with the session flow once the client and backend pieces land.
+4. Open the app in the target platform and continue with the session flow.
 
 If the agent does not join or transcripts do not appear, run `agora project doctor --deep` to check credentials, feature enablement, network reachability, and local environment binding.
 
@@ -63,12 +63,12 @@ flutter run -d chrome
 
 ## Environment variables
 
-Backend companion values live in [`backend/.env`](./backend/.env). The Flutter client uses `http://localhost:3001` by default on web and `http://10.0.2.2:3001` on the Android emulator, or override it with `--dart-define=BACKEND_BASE_URL=...` if needed.
+The repo-root [`.env.local`](./.env.local) file is the single runtime config source for the backend companion. The Flutter client loads its public config from the backend companion at startup. It uses `http://localhost:3001` by default on web and `http://10.0.2.2:3001` on the Android emulator, or override it with `--dart-define=BACKEND_BASE_URL=...` if needed.
 
 | Variable | Required | Default | Notes |
 | --- | ---: | ---: | --- |
-| `NEXT_PUBLIC_AGORA_APP_ID` | ✅ | — | Agora Console project App ID used by the backend token and invite routes. |
-| `NEXT_AGORA_APP_CERTIFICATE` | ✅ | — | Agora Console project App Certificate. Keep server-side only. |
+| `NEXT_PUBLIC_AGORA_APP_ID` | ✅ | — | Agora Console project App ID used by the backend token and exposed to the Flutter client through the backend companion. |
+| `NEXT_AGORA_APP_CERTIFICATE` | ✅ | — | Agora Console project App Certificate. The backend reads it from the same root `.env.local` file. |
 | `NEXT_PUBLIC_AGENT_UID` |  | `123456` | Must match the managed agent uid used by the backend invite flow. |
 | `NEXT_AGENT_GREETING` |  | — | Optional override for the agent opening line. |
 | `BACKEND_BASE_URL` |  | `http://localhost:3001` on web, `http://10.0.2.2:3001` on Android emulator | Flutter client backend companion URL. |
@@ -81,7 +81,7 @@ The default agent configuration will use Agora-managed STT, LLM, and TTS, so no 
 
 ```bash
 # Dev
-flutter run -d chrome     # run the Flutter app in Chrome
+flutter run -d chrome   # run the Flutter app in Chrome
 
 # Quality
 flutter analyze           # static analysis
@@ -95,14 +95,14 @@ Run the narrowest relevant checks before you ship a change.
 
 ## Architecture
 
-The Flutter client joins Agora RTC for audio transport and uses RTM for transcript, agent state, metrics, and error events. A backend companion will mint short-lived tokens and start or stop the managed agent session.
+The Flutter client joins Agora RTC for audio transport and uses a backend companion to mint short-lived tokens and start or stop the managed agent session. The live transcript and richer agent state layers will sit on top of that session shell as the integration grows.
 
 ## What You Get
 
 - Flutter voice client for web, iOS, and Android
-- RTC audio plus RTM transcript and state events
+- RTC audio plus session state and call-control UI
 - backend routes or services for token generation, invite, and stop
-- live transcript, connection status, and call-state UI
+- live connection status, event log, and call-state UI
 - Agora-managed default STT, LLM, and TTS configuration
 
 ## How It Works
@@ -110,8 +110,8 @@ The Flutter client joins Agora RTC for audio transport and uses RTM for transcri
 1. The client requests a short-lived token from the backend.
 2. The backend invites the Agora managed agent for the selected channel.
 3. The Flutter app joins the RTC channel and publishes microphone audio.
-4. The client receives transcript, agent state, and metrics over RTM.
-5. On end, the client calls the stop flow, logs out of RTM, and tears down the call view cleanly.
+4. The client receives live session events and status updates in the call UI.
+5. On end, the client calls the stop flow and tears down the call view cleanly.
 
 ## Optional BYOK
 
@@ -130,7 +130,7 @@ The base quickstart will default to Agora-managed inference. If we add BYOK supp
 
 - **Agent does not join or transcripts are missing:** run `agora project doctor --deep`.
 - **Setup feels incomplete:** make sure the project is bound and local env values are written.
-- **Voice or state flow is missing:** confirm the backend token and invite flow are implemented and the client subscribes to RTM.
+- **Voice or state flow is missing:** confirm the backend token and invite flow are implemented, the backend companion is running, and microphone permission is granted.
 
 ## More Docs
 

@@ -4,11 +4,12 @@
 
 ## Environment Contracts
 
+- The repo-root `.env.local` file is the single runtime config source for the backend companion.
 - `NEXT_PUBLIC_AGORA_APP_ID`: Agora Console project App ID.
-- `NEXT_AGORA_APP_CERTIFICATE`: Agora Console project App Certificate, server-side only.
+- `NEXT_AGORA_APP_CERTIFICATE`: Agora Console project App Certificate, consumed by the backend companion from the same root file.
 - `NEXT_PUBLIC_AGENT_UID`: agent uid used by the invite flow.
 - `NEXT_AGENT_GREETING`: optional override for the agent greeting.
-- Keep server-only secrets out of the client runtime.
+- Keep server-only secrets out of the Flutter runtime.
 
 ## Session Contracts
 

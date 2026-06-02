@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 
 import 'config/app_config.dart';
 import 'models/conversation.dart';
+import 'utils/conversation.dart';
 import 'services/backend_api.dart';
+import 'services/conversation_session_controller.dart';
+import 'services/rtc_session_service.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const AgentQuickstartApp());
 }
 
@@ -27,130 +31,105 @@ class AgentQuickstartApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: const _LandingScreen(),
+      home: const _BootstrapScreen(),
+    );
+  }
+}
+
+class _BootstrapScreen extends StatefulWidget {
+  const _BootstrapScreen();
+
+  @override
+  State<_BootstrapScreen> createState() => _BootstrapScreenState();
+}
+
+class _BootstrapScreenState extends State<_BootstrapScreen> {
+  late final Future<AppConfig> _configFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _configFuture = AppConfig.load();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<AppConfig>(
+      future: _configFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+
+        if (snapshot.hasError || !snapshot.hasData) {
+          return Scaffold(
+            body: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(
+                  'Failed to load app config: ${snapshot.error}',
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+          );
+        }
+
+        return _LandingScreen(config: snapshot.data!);
+      },
     );
   }
 }
 
 class _LandingScreen extends StatefulWidget {
-  const _LandingScreen();
+  const _LandingScreen({required this.config});
+
+  final AppConfig config;
 
   @override
   State<_LandingScreen> createState() => _LandingScreenState();
 }
 
 class _LandingScreenState extends State<_LandingScreen> {
-  late final AppConfig _config;
   late final BackendApi _backendApi;
-
-  AgoraTokenData? _sessionData;
-  AgentResponse? _agentResponse;
-  String? _error;
-  bool _isStarting = false;
-  bool _isEnding = false;
+  late final ConversationSessionController _controller;
 
   @override
   void initState() {
     super.initState();
-    _config = AppConfig.fromEnvironment();
-    _backendApi = BackendApi(baseUrl: _config.backendBaseUrl);
+    final config = widget.config;
+    _backendApi = BackendApi(baseUrl: config.backendBaseUrl);
+    _controller = ConversationSessionController(
+      config: config,
+      backendApi: _backendApi,
+      rtcSessionService: AgoraRtcSessionService(),
+    )..addListener(_onControllerChanged);
+  }
+
+  void _onControllerChanged() {
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   @override
   void dispose() {
+    _controller
+      ..removeListener(_onControllerChanged)
+      ..dispose();
     _backendApi.dispose();
     super.dispose();
-  }
-
-  Future<void> _startConversation() async {
-    if (_isStarting || _sessionData != null) return;
-
-    setState(() {
-      _isStarting = true;
-      _error = null;
-    });
-
-    try {
-      final tokenData = await _backendApi.generateToken(
-        uid: _config.agentUid.toString(),
-      );
-      final agentResponse = await _backendApi.inviteAgent(
-        ClientStartRequest(
-          requesterId: tokenData.uid,
-          channelName: tokenData.channel,
-        ),
-      );
-
-      if (!mounted) return;
-      setState(() {
-        _sessionData = tokenData.copyWithAgent(agentResponse.agentId);
-        _agentResponse = agentResponse;
-      });
-    } on BackendApiException catch (error) {
-      if (!mounted) return;
-      setState(() {
-        _error = error.message;
-      });
-    } catch (error) {
-      if (!mounted) return;
-      setState(() {
-        _error = error.toString();
-      });
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isStarting = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _endConversation() async {
-    if (_isEnding) return;
-
-    final agentId = _sessionData?.agentId;
-    if (agentId == null || agentId.isEmpty) {
-      setState(() {
-        _sessionData = null;
-        _agentResponse = null;
-      });
-      return;
-    }
-
-    setState(() {
-      _isEnding = true;
-      _error = null;
-    });
-
-    try {
-      await _backendApi.stopConversation(
-        StopConversationRequest(agentId: agentId),
-      );
-    } on BackendApiException catch (error) {
-      if (!mounted) return;
-      setState(() {
-        _error = error.message;
-      });
-    } catch (error) {
-      if (!mounted) return;
-      setState(() {
-        _error = error.toString();
-      });
-    } finally {
-      if (mounted) {
-        setState(() {
-          _sessionData = null;
-          _agentResponse = null;
-          _isEnding = false;
-        });
-      }
-    }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final hasSession = _sessionData != null;
+    final state = _controller.state;
+    final hasSession = state.phase != ConversationPhase.idle;
 
     return Scaffold(
       body: Stack(
@@ -167,16 +146,16 @@ class _LandingScreenState extends State<_LandingScreen> {
                       child: hasSession
                           ? _SessionCard(
                               theme: theme,
-                              sessionData: _sessionData!,
-                              agentResponse: _agentResponse,
-                              isEnding: _isEnding,
-                              onEndConversation: _endConversation,
+                              state: state,
+                              isEnding: _controller.isEnding,
+                              onEndConversation: _controller.endConversation,
+                              onToggleMic: _controller.toggleMute,
                             )
                           : _PreCallCard(
                               theme: theme,
-                              isStarting: _isStarting,
-                              error: _error,
-                              onStartConversation: _startConversation,
+                              isStarting: _controller.isStarting,
+                              error: state.errorMessage,
+                              onStartConversation: _controller.startConversation,
                             ),
                     ),
                   ),
@@ -383,21 +362,22 @@ class _PreCallCard extends StatelessWidget {
 class _SessionCard extends StatelessWidget {
   const _SessionCard({
     required this.theme,
-    required this.sessionData,
-    required this.agentResponse,
+    required this.state,
     required this.isEnding,
     required this.onEndConversation,
+    required this.onToggleMic,
   });
 
   final ThemeData theme;
-  final AgoraTokenData sessionData;
-  final AgentResponse? agentResponse;
+  final ConversationSessionState state;
   final bool isEnding;
   final VoidCallback onEndConversation;
+  final VoidCallback onToggleMic;
 
   @override
   Widget build(BuildContext context) {
     final textTheme = theme.textTheme;
+    final transcript = getMessageList(state.transcript);
 
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0.96, end: 1),
@@ -421,79 +401,322 @@ class _SessionCard extends StatelessWidget {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFF1F1F1F),
+              Color(0xFF1B1B1B),
               Color(0xFF0D0D0D),
             ],
           ),
         ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 28),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              Row(
+                children: [
+                  _StatusDot(
+                    color: state.phase == ConversationPhase.connected
+                        ? const Color(0xFF22C55E)
+                        : const Color(0xFFF59E0B),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      _phaseTitle(state.phase),
+                      style: textTheme.labelLarge?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  _MiniBadge(
+                    text: state.isMicMuted ? 'Mic muted' : 'Mic live',
+                    color: state.isMicMuted
+                        ? const Color(0xFFF59E0B)
+                        : const Color(0xFF22C55E),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
               Text(
-                'Conversation ready',
+                'Conversation live',
                 textAlign: TextAlign.center,
                 style: textTheme.headlineSmall?.copyWith(
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 6),
               Text(
-                'The backend returned a valid token and agent invite response. Next we wire RTC, RTM, and transcript events into this session shell.',
+                'The RTC engine is joined. We are now listening for the agent voice, remote user events, and token renewals.',
                 textAlign: TextAlign.center,
                 style: textTheme.bodyMedium?.copyWith(
                   color: const Color(0xFF9CA3AF),
                   height: 1.45,
                 ),
               ),
-              const SizedBox(height: 24),
-              _InfoPill(label: 'Channel', value: sessionData.channel),
+              const SizedBox(height: 14),
+              _InfoPill(
+                label: 'Channel',
+                value: state.tokenData?.channel ?? 'n/a',
+              ),
+              const SizedBox(height: 8),
+              _InfoPill(
+                label: 'Local UID',
+                value:
+                    (state.localUid ?? state.tokenData?.uid ?? 'n/a').toString(),
+              ),
               const SizedBox(height: 10),
-              _InfoPill(label: 'User UID', value: sessionData.uid),
+              _InfoPill(
+                label: 'Agent ID',
+                value: state.tokenData?.agentId ?? 'pending',
+              ),
               const SizedBox(height: 10),
-              _InfoPill(label: 'Agent ID', value: sessionData.agentId ?? 'n/a'),
-              if (agentResponse != null) ...[
+              _InfoPill(
+                label: 'Remote UID',
+                value: state.remoteUid?.toString() ?? 'waiting',
+              ),
+              const SizedBox(height: 10),
+              _InfoPill(
+                label: 'State',
+                value: state.connectionStatus ?? 'idle',
+              ),
+              if (state.agentResponse != null) ...[
                 const SizedBox(height: 10),
-                _InfoPill(label: 'State', value: agentResponse!.state),
+                _InfoPill(
+                  label: 'Agent',
+                  value: state.agentResponse!.state,
+                ),
               ],
-              const SizedBox(height: 24),
-              SizedBox(
-                height: 40,
-                child: FilledButton(
-                  onPressed: isEnding ? null : onEndConversation,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFFD92D20),
-                    foregroundColor: Colors.white,
-                    disabledBackgroundColor: const Color(0xFFD92D20),
-                    disabledForegroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    textStyle: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
+              if (state.errorMessage != null) ...[
+                const SizedBox(height: 14),
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF3F1D1D),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFF7F1D1D)),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Text(
+                      state.errorMessage!,
+                      style: textTheme.bodySmall?.copyWith(
+                        color: const Color(0xFFFCA5A5),
+                      ),
                     ),
                   ),
-                  child: isEnding
-                      ? const SizedBox(
-                          width: 14,
-                          height: 14,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              ],
+              const SizedBox(height: 18),
+              Text(
+                'Event log',
+                style: textTheme.labelLarge?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 10),
+              ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 140, maxHeight: 200),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF121212),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFF2B2B2B)),
+                  ),
+                  child: transcript.isEmpty
+                      ? Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(20),
+                            child: Text(
+                              'Waiting for session events...',
+                              textAlign: TextAlign.center,
+                              style: textTheme.bodyMedium?.copyWith(
+                                color: const Color(0xFF9CA3AF),
+                              ),
+                            ),
                           ),
                         )
-                      : const Text('End Conversation'),
+                      : ListView.separated(
+                          padding: const EdgeInsets.all(14),
+                          itemCount: transcript.length,
+                          separatorBuilder: (_, _) => const SizedBox(height: 10),
+                          itemBuilder: (context, index) {
+                            final item = transcript[index];
+                            return _TranscriptTile(item: item);
+                          },
+                        ),
                 ),
+              ),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: onToggleMic,
+                      icon: Icon(
+                        state.isMicMuted ? Icons.mic_off : Icons.mic,
+                      ),
+                      label: Text(
+                        state.isMicMuted ? 'Unmute mic' : 'Mute mic',
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        side: const BorderSide(color: Color(0xFF2B2B2B)),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: isEnding ? null : onEndConversation,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFFD92D20),
+                        foregroundColor: Colors.white,
+                        disabledBackgroundColor: const Color(0xFFD92D20),
+                        disabledForegroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: isEnding
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
+                              ),
+                            )
+                          : const Text('End Conversation'),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+String _phaseTitle(ConversationPhase phase) {
+  return switch (phase) {
+    ConversationPhase.idle => 'Idle',
+    ConversationPhase.preparing => 'Preparing session',
+    ConversationPhase.connecting => 'Connecting',
+    ConversationPhase.connected => 'Connected',
+    ConversationPhase.ending => 'Ending session',
+    ConversationPhase.error => 'Session error',
+  };
+}
+
+class _StatusDot extends StatelessWidget {
+  const _StatusDot({required this.color});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 10,
+      height: 10,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.5),
+            blurRadius: 12,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MiniBadge extends StatelessWidget {
+  const _MiniBadge({required this.text, required this.color});
+
+  final String text;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.35)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        child: Text(
+          text,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TranscriptTile extends StatelessWidget {
+  const _TranscriptTile({required this.item});
+
+  final TranscriptMessage item;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isSystem = item.uid == 'system';
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          margin: const EdgeInsets.only(top: 6),
+          decoration: BoxDecoration(
+            color: isSystem ? const Color(0xFF00C2FF) : Colors.white,
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                isSystem ? 'System' : 'Participant ${item.uid}',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: const Color(0xFF9CA3AF),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                item.text,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: Colors.white,
+                  height: 1.35,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
@@ -561,17 +784,6 @@ class _FooterMark extends StatelessWidget {
             color: const Color(0xFF6B7280),
             letterSpacing: 0.4,
           ),
-    );
-  }
-}
-
-extension on AgoraTokenData {
-  AgoraTokenData copyWithAgent(String? agentId) {
-    return AgoraTokenData(
-      token: token,
-      uid: uid,
-      channel: channel,
-      agentId: agentId ?? this.agentId,
     );
   }
 }

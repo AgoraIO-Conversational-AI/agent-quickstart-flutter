@@ -1,4 +1,10 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const currentDir = dirname(fileURLToPath(import.meta.url));
+
+dotenv.config({ path: resolve(currentDir, '../../.env.local') });
 
 export const EXPIRATION_TIME_IN_SECONDS = 3600;
 export const DEFAULT_AGENT_UID = 123456;
@@ -20,4 +26,3 @@ export function getAgentUid() {
 export function getAgentGreeting() {
   return process.env.NEXT_AGENT_GREETING ?? "Hi there! I'm Ada, your virtual assistant from Agora. How can I help?";
 }
-

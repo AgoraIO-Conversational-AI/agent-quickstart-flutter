@@ -1,6 +1,7 @@
 import { corsPreflightResponse, jsonResponse } from './http.js';
 import { handleGenerateAgoraToken } from './token.js';
 import { handleInviteAgent, handleStopConversation } from './agent.js';
+import { requireEnv, getAgentGreeting, getAgentUid } from './config.js';
 import { createServer } from 'node:http';
 
 const port = Number.parseInt(process.env.PORT ?? '3001', 10);
@@ -27,6 +28,14 @@ async function route(request) {
 
   if (request.method === 'GET' && pathname === '/health') {
     return jsonResponse({ ok: true });
+  }
+
+  if (request.method === 'GET' && pathname === '/api/client-config') {
+    return jsonResponse({
+      agoraAppId: requireEnv('NEXT_PUBLIC_AGORA_APP_ID'),
+      agentUid: getAgentUid(),
+      agentGreeting: getAgentGreeting(),
+    });
   }
 
   return jsonResponse({ error: 'Not found' }, 404);

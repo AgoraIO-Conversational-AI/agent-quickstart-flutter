@@ -16,7 +16,7 @@
 3. Write local environment values.
 4. Verify setup before running.
 
-Backend companion environment values live in `backend/.env`. The Flutter client uses `http://localhost:3001` by default on web and `http://10.0.2.2:3001` on Android emulator, and `BACKEND_BASE_URL` only when it needs to point away from the local backend default.
+The repo-root `.env.local` file is the single runtime config source for the backend companion. The Flutter client loads its public config from the backend companion at startup. The Flutter client uses `http://localhost:3001` by default on web and `http://10.0.2.2:3001` on Android emulator, and `BACKEND_BASE_URL` only when it needs to point away from the local backend default.
 
 ## Primary Commands
 
@@ -44,4 +44,4 @@ Requires env/project binding:
 - Start from the app shell and bootstrap the session in small steps.
 - Keep token generation and agent invite outside the client runtime.
 - Run the Flutter app and backend companion in separate terminals during local development.
-- If transcript or agent join fails, check the token, invite, and RTM wiring first.
+- If the session does not start, check the token, invite, RTC setup, microphone permission, and that the backend companion is running first.

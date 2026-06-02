@@ -1,32 +1,43 @@
-import '../constants/agora.dart';
 import '../constants/backend.dart';
+import '../constants/agora.dart';
+import '../services/backend_api.dart';
 
 class AppConfig {
   const AppConfig({
+    required this.agoraAppId,
     required this.backendBaseUrl,
     required this.agentUid,
     required this.agentGreeting,
   });
 
   static const backendBaseUrlKey = 'BACKEND_BASE_URL';
-  static const agentUidKey = 'NEXT_PUBLIC_AGENT_UID';
-  static const agentGreetingKey = 'NEXT_AGENT_GREETING';
 
+  final String agoraAppId;
   final String backendBaseUrl;
   final int agentUid;
   final String? agentGreeting;
 
-  factory AppConfig.fromEnvironment() {
-    final agentUidRaw = const String.fromEnvironment(agentUidKey);
+  static Future<AppConfig> load() async {
     final backendUrl = const String.fromEnvironment(backendBaseUrlKey);
-    return AppConfig(
-      backendBaseUrl:
-          backendUrl.isEmpty ? defaultBackendBaseUrl() : backendUrl,
-      agentUid: int.tryParse(agentUidRaw) ?? defaultAgentUid,
-      agentGreeting: const String.fromEnvironment(agentGreetingKey),
-    );
+    final resolvedBackendUrl =
+        backendUrl.isEmpty ? defaultBackendBaseUrl() : backendUrl;
+    final backendApi = BackendApi(baseUrl: resolvedBackendUrl);
+
+    try {
+      final data = await backendApi.fetchClientConfig();
+      return AppConfig(
+        agoraAppId: (data['agoraAppId'] as String?) ?? '',
+        backendBaseUrl: resolvedBackendUrl,
+        agentUid:
+            int.tryParse((data['agentUid'] ?? '').toString()) ?? defaultAgentUid,
+        agentGreeting: data['agentGreeting'] as String?,
+      );
+    } finally {
+      backendApi.dispose();
+    }
   }
 
+  bool get hasAgoraAppId => agoraAppId.isNotEmpty;
   bool get hasBackendBaseUrl => backendBaseUrl.isNotEmpty;
   bool get hasGreeting => (agentGreeting ?? '').isNotEmpty;
 }

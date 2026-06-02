@@ -117,6 +117,20 @@ class BackendApi {
     return data;
   }
 
+  Future<Map<String, Object?>> fetchClientConfig() async {
+    final response = await _client.get(_uri('/api/client-config'));
+    final data = _decodeObject(response.body);
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw BackendApiException(
+        (data['error'] as String?) ?? 'Failed to fetch client config',
+        statusCode: response.statusCode,
+      );
+    }
+
+    return data;
+  }
+
   void dispose() {
     _client.close();
   }

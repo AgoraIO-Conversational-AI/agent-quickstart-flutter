@@ -25,7 +25,7 @@ Thumbs.db
 
 # Android
 android/local.properties
-android/.gradle/
+.gradle/
 android/app/debug/
 android/app/profile/
 android/app/release/
@@ -47,8 +47,6 @@ DerivedData/
 
 # Backend companion
 backend/node_modules/
-backend/.env
-backend/.env.*
 backend/dist/
 backend/.turbo/
 backend/.cache/

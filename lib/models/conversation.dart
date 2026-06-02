@@ -32,6 +32,70 @@ extension AgentVisualizerStateX on AgentVisualizerState {
       };
 }
 
+enum ConversationPhase {
+  idle,
+  preparing,
+  connecting,
+  connected,
+  ending,
+  error,
+}
+
+@immutable
+class ConversationSessionState {
+  const ConversationSessionState({
+    required this.phase,
+    required this.transcript,
+    this.tokenData,
+    this.agentResponse,
+    this.localUid,
+    this.remoteUid,
+    this.connectionStatus,
+    this.isMicMuted = false,
+    this.errorMessage,
+  });
+
+  const ConversationSessionState.initial()
+      : this(
+          phase: ConversationPhase.idle,
+          transcript: const <TranscriptItem>[],
+        );
+
+  final ConversationPhase phase;
+  final AgoraTokenData? tokenData;
+  final AgentResponse? agentResponse;
+  final List<TranscriptItem> transcript;
+  final int? localUid;
+  final int? remoteUid;
+  final String? connectionStatus;
+  final bool isMicMuted;
+  final String? errorMessage;
+
+  ConversationSessionState copyWith({
+    ConversationPhase? phase,
+    AgoraTokenData? tokenData,
+    AgentResponse? agentResponse,
+    List<TranscriptItem>? transcript,
+    int? localUid,
+    int? remoteUid,
+    String? connectionStatus,
+    bool? isMicMuted,
+    String? errorMessage,
+  }) {
+    return ConversationSessionState(
+      phase: phase ?? this.phase,
+      tokenData: tokenData ?? this.tokenData,
+      agentResponse: agentResponse ?? this.agentResponse,
+      transcript: transcript ?? this.transcript,
+      localUid: localUid ?? this.localUid,
+      remoteUid: remoteUid ?? this.remoteUid,
+      connectionStatus: connectionStatus ?? this.connectionStatus,
+      isMicMuted: isMicMuted ?? this.isMicMuted,
+      errorMessage: errorMessage ?? this.errorMessage,
+    );
+  }
+}
+
 @immutable
 class AgoraTokenData {
   const AgoraTokenData({
@@ -45,6 +109,20 @@ class AgoraTokenData {
   final String uid;
   final String channel;
   final String? agentId;
+
+  AgoraTokenData copyWith({
+    String? token,
+    String? uid,
+    String? channel,
+    String? agentId,
+  }) {
+    return AgoraTokenData(
+      token: token ?? this.token,
+      uid: uid ?? this.uid,
+      channel: channel ?? this.channel,
+      agentId: agentId ?? this.agentId,
+    );
+  }
 
   factory AgoraTokenData.fromJson(Map<String, Object?> json) {
     return AgoraTokenData(

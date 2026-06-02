@@ -226,7 +226,7 @@ class ConversationSessionController extends ChangeNotifier {
   }
 
   Future<void> _requestMicrophonePermission() async {
-    if (kIsWeb) {
+    if (kIsWeb || defaultTargetPlatform == TargetPlatform.macOS) {
       return;
     }
 

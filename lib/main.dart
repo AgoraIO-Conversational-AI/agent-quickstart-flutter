@@ -108,7 +108,7 @@ class _LandingScreenState extends State<_LandingScreen> {
       config: config,
       backendApi: _backendApi,
       rtcSessionService: AgoraRtcSessionService(),
-      rtmSessionService: AgoraRtmSessionService(),
+      rtmSessionService: createRtmSessionService(),
     )..addListener(_onControllerChanged);
   }
 

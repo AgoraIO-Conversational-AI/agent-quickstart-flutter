@@ -51,6 +51,50 @@ Getting started is quick and easy: install the Agora CLI, bind your project, wri
 
 If the agent does not join or transcripts do not appear, run `agora project doctor --deep` to check credentials, feature enablement, network reachability, and local env binding.
 
+## Run By Platform
+
+### Chrome / Web
+
+```bash
+cd backend && npm run dev
+flutter run -d chrome
+```
+
+- Uses the browser RTM bridge in [`web/rtm_bridge.js`](./web/rtm_bridge.js)
+- Default backend base URL: `http://localhost:3001`
+
+### Android
+
+```bash
+cd backend && npm run dev
+flutter run -d <android-device>
+```
+
+- Use `flutter run -d emulator-5554` or your physical device id
+- Android emulator backend base URL: `http://10.0.2.2:3001`
+- For a physical device, point `BACKEND_BASE_URL` at your computer's LAN IP
+
+### iOS
+
+```bash
+cd backend && npm run dev
+flutter run -d <ios-device>
+```
+
+- The iOS app uses the native RTM and RTC plugins
+- Make sure the device trusts the developer certificate and microphone access is granted
+
+### macOS
+
+```bash
+cd backend && npm run dev
+flutter run -d macos
+```
+
+- macOS can join RTC and capture audio
+- RTM transcript delivery is stubbed on macOS in this repo, so live transcript text will not appear there
+- Use Chrome, Android, or iOS for the full transcript experience
+
 ## Working from a clone of this repository
 
 Use this path if you already cloned this repo and want to develop directly from it:
@@ -140,6 +184,7 @@ sequenceDiagram
 ## What You Get
 
 - Flutter voice client for web, iOS, and Android
+- macOS desktop support for RTC audio playback and microphone capture
 - RTC audio plus session state and call-control UI
 - backend routes for token generation, invite, and stop
 - live connection status, event log, and call-state UI
@@ -176,6 +221,7 @@ The base quickstart defaults to Agora-managed inference. If we add BYOK support 
 - **Voice or state flow is missing:** confirm the backend token and invite flow are implemented, the backend companion is running, and microphone permission is granted.
 - **Chrome shows no transcript:** make sure `web/index.html` loads the Agora RTM web SDK and `web/rtm_bridge.js` is present.
 - **Android cannot reach the backend:** use `http://10.0.2.2:3001` for the emulator, or point `BACKEND_BASE_URL` at your machine's LAN IP when using a physical device.
+- **macOS shows audio but no transcript:** this repo uses the native RTC engine on macOS, but RTM transcript delivery is currently stubbed there. Use Chrome, Android, or iOS for the full transcript experience.
 
 ## More Docs
 

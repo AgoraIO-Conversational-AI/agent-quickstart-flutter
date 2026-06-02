@@ -11,7 +11,7 @@ Build a production-style voice agent in Flutter with the Agora Conversational AI
 
 ## Run It
 
-Getting started is straightforward: bind the app to an Agora project, install dependencies, and run the Flutter client.
+Getting started is straightforward: bind the app to an Agora project, install dependencies, and run the Flutter client plus the backend companion.
 
 1. **Install the Agora CLI and sign in**
    - skip this step if `agora` is already on your PATH
@@ -29,6 +29,12 @@ Getting started is straightforward: bind the app to an Agora project, install de
    ```
 
 3. **Install and run**
+
+   ```bash
+   cd backend && npm install && npm run dev
+   ```
+
+   In a second terminal from the repo root:
 
    ```bash
    flutter pub get
@@ -50,20 +56,22 @@ agora login
 agora project use <your-project>
 agora project env write .env.local
 agora project doctor --deep
+cd backend && npm install && npm run dev
 flutter pub get
 flutter run -d chrome
 ```
 
 ## Environment variables
 
-Documented here once the backend control-plane lands.
+Backend companion values live in [`backend/.env`](./backend/.env). The Flutter client uses `http://localhost:3001` by default on web and `http://10.0.2.2:3001` on the Android emulator, or override it with `--dart-define=BACKEND_BASE_URL=...` if needed.
 
 | Variable | Required | Default | Notes |
 | --- | ---: | ---: | --- |
-| `AGORA_APP_ID` | ✅ | — | Agora Console project App ID. |
-| `AGORA_APP_CERTIFICATE` | ✅ | — | Agora Console project App Certificate. Keep server-side only. |
-| `AGENT_UID` |  | `123456` | Must match the managed agent uid used by the backend invite flow. |
-| `AGENT_GREETING` |  | — | Optional override for the agent opening line. |
+| `NEXT_PUBLIC_AGORA_APP_ID` | ✅ | — | Agora Console project App ID used by the backend token and invite routes. |
+| `NEXT_AGORA_APP_CERTIFICATE` | ✅ | — | Agora Console project App Certificate. Keep server-side only. |
+| `NEXT_PUBLIC_AGENT_UID` |  | `123456` | Must match the managed agent uid used by the backend invite flow. |
+| `NEXT_AGENT_GREETING` |  | — | Optional override for the agent opening line. |
+| `BACKEND_BASE_URL` |  | `http://localhost:3001` on web, `http://10.0.2.2:3001` on Android emulator | Flutter client backend companion URL. |
 
 The default agent configuration will use Agora-managed STT, LLM, and TTS, so no extra vendor API keys are required for the base quickstart.
 
@@ -112,6 +120,7 @@ The base quickstart will default to Agora-managed inference. If we add BYOK supp
 ## Repo Map
 
 - `lib/main.dart` - Flutter app shell and entry point
+- `backend/` - Node backend companion for token, invite, and stop routes
 - `docs/ai/` - progressive-disclosure docs for agents
 - `AGENTS.md` - primary agent-facing guide
 - `android/` - Android host app
@@ -132,4 +141,3 @@ The base quickstart will default to Agora-managed inference. If we add BYOK supp
 ## Security
 
 Please do not open public issues for security reports. Use the appropriate Agora security contact path with details and reproduction steps.
-

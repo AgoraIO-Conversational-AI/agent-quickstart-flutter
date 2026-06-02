@@ -7,9 +7,9 @@
 | Field | Value |
 | --- | --- |
 | Repo | `agent-quickstart-flutter` |
-| Type | `frontend-app` |
+| Type | `client-app + backend-companion` |
 | Language | Dart, Flutter |
-| Deploy Target | Local Flutter run on web, iOS, and Android |
+| Deploy Target | Local Flutter run on web, iOS, and Android with a local Node backend companion |
 | Owner | Agora Conversational AI / DevEx |
 | Recipe Role | base |
 | Recipe Version | 0.1.0 |

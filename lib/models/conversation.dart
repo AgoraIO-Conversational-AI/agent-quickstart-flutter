@@ -46,6 +46,15 @@ class AgoraTokenData {
   final String channel;
   final String? agentId;
 
+  factory AgoraTokenData.fromJson(Map<String, Object?> json) {
+    return AgoraTokenData(
+      token: (json['token'] as String?) ?? '',
+      uid: (json['uid'] as String?) ?? '',
+      channel: (json['channel'] as String?) ?? '',
+      agentId: json['agentId'] as String?,
+    );
+  }
+
   Map<String, Object?> toJson() => {
         'token': token,
         'uid': uid,
@@ -116,6 +125,13 @@ class AgoraRenewalTokens {
   final String rtcToken;
   final String rtmToken;
 
+  factory AgoraRenewalTokens.fromJson(Map<String, Object?> json) {
+    return AgoraRenewalTokens(
+      rtcToken: (json['rtcToken'] as String?) ?? '',
+      rtmToken: (json['rtmToken'] as String?) ?? '',
+    );
+  }
+
   Map<String, String> toJson() => {
         'rtcToken': rtcToken,
         'rtmToken': rtmToken,
@@ -171,4 +187,3 @@ class TranscriptMessage {
   final TranscriptTurnStatus status;
   final int? createdAtMs;
 }
-

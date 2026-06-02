@@ -1,31 +1,32 @@
 import '../constants/agora.dart';
+import '../constants/backend.dart';
 
 class AppConfig {
   const AppConfig({
-    required this.agoraAppId,
+    required this.backendBaseUrl,
     required this.agentUid,
     required this.agentGreeting,
   });
 
-  static const agoraAppIdKey = 'AGORA_APP_ID';
-  static const agoraAppCertificateKey = 'AGORA_APP_CERTIFICATE';
-  static const agentUidKey = 'AGENT_UID';
-  static const agentGreetingKey = 'AGENT_GREETING';
+  static const backendBaseUrlKey = 'BACKEND_BASE_URL';
+  static const agentUidKey = 'NEXT_PUBLIC_AGENT_UID';
+  static const agentGreetingKey = 'NEXT_AGENT_GREETING';
 
-  final String? agoraAppId;
+  final String backendBaseUrl;
   final int agentUid;
   final String? agentGreeting;
 
   factory AppConfig.fromEnvironment() {
     final agentUidRaw = const String.fromEnvironment(agentUidKey);
+    final backendUrl = const String.fromEnvironment(backendBaseUrlKey);
     return AppConfig(
-      agoraAppId: const String.fromEnvironment(agoraAppIdKey),
+      backendBaseUrl:
+          backendUrl.isEmpty ? defaultBackendBaseUrl() : backendUrl,
       agentUid: int.tryParse(agentUidRaw) ?? defaultAgentUid,
       agentGreeting: const String.fromEnvironment(agentGreetingKey),
     );
   }
 
-  bool get hasAgoraAppId => (agoraAppId ?? '').isNotEmpty;
+  bool get hasBackendBaseUrl => backendBaseUrl.isNotEmpty;
   bool get hasGreeting => (agentGreeting ?? '').isNotEmpty;
 }
-

@@ -20,14 +20,14 @@ ios/              iOS host project
 
 ## Backend Ownership (`backend/`)
 
-- Token generation.
-- Managed agent invite/start.
-- Stop conversation.
-- Optional health or contract checks.
+- `src/token.js`: token generation via `buildTokenWithRtm`.
+- `src/agent.js`: managed agent invite/start and stop behavior.
+- `src/server.js`: HTTP routing for the `api/*` control-plane endpoints.
+- `src/http.js`: JSON, CORS, and request helpers.
+- `src/config.js`: environment lookup and defaults.
 
 ## Validation and Tooling
 
 - `flutter analyze` for static checks.
 - `flutter test` for unit and widget tests.
-- Backend validation will be documented with the companion service.
-
+- `cd backend && node --check src/*.js` for backend syntax checks.

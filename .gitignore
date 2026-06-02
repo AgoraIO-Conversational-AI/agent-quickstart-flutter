@@ -42,3 +42,16 @@ DerivedData/
 # Miscellaneous caches
 .firebase/
 .fvm/
+.env
+.env.*
+
+# Backend companion
+backend/node_modules/
+backend/.env
+backend/.env.*
+backend/dist/
+backend/.turbo/
+backend/.cache/
+backend/npm-debug.log*
+backend/yarn-debug.log*
+backend/yarn-error.log*

@@ -16,14 +16,17 @@
 3. Write local environment values.
 4. Verify setup before running.
 
+Backend companion environment values live in `backend/.env`. The Flutter client uses `http://localhost:3001` by default on web and `http://10.0.2.2:3001` on Android emulator, and `BACKEND_BASE_URL` only when it needs to point away from the local backend default.
+
 ## Primary Commands
 
 - `flutter pub get`
 - `flutter analyze`
 - `flutter test`
 - `flutter run -d chrome`
-
-Backend commands will be documented once the control-plane companion lands.
+- `cd backend && npm install`
+- `cd backend && npm run dev`
+- `flutter run -d chrome --dart-define=BACKEND_BASE_URL=http://localhost:3001`
 
 ## Verification Safety
 
@@ -40,5 +43,5 @@ Requires env/project binding:
 
 - Start from the app shell and bootstrap the session in small steps.
 - Keep token generation and agent invite outside the client runtime.
+- Run the Flutter app and backend companion in separate terminals during local development.
 - If transcript or agent join fails, check the token, invite, and RTM wiring first.
-

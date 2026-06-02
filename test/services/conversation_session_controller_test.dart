@@ -6,6 +6,7 @@ import 'package:agent_quickstart_flutter/models/conversation.dart';
 import 'package:agent_quickstart_flutter/services/backend_api.dart';
 import 'package:agent_quickstart_flutter/services/conversation_session_controller.dart';
 import 'package:agent_quickstart_flutter/services/rtc_session_service.dart';
+import 'package:agent_quickstart_flutter/services/rtm_session_service.dart';
 
 class FakeBackendApi extends BackendApi {
   FakeBackendApi()
@@ -113,10 +114,55 @@ class FakeRtcSessionService implements RtcSessionService {
   }
 }
 
+class FakeRtmSessionService implements RtmSessionService {
+  RtmSessionListener? listener;
+  bool initialized = false;
+  bool left = false;
+  bool disposed = false;
+  String? renewedToken;
+
+  @override
+  Future<void> initialize({
+    required String appId,
+    required String userId,
+    required String token,
+    required String channelName,
+    required RtmSessionListener listener,
+  }) async {
+    initialized = true;
+    this.listener = listener;
+    listener.onConnected('connected');
+  }
+
+  @override
+  Future<void> leave() async {
+    left = true;
+  }
+
+  @override
+  Future<void> dispose() async {
+    disposed = true;
+  }
+
+  @override
+  Future<void> renewToken(String token) async {
+    renewedToken = token;
+  }
+
+  void emitTranscript(List<TranscriptItem> transcript) {
+    listener?.onTranscriptUpdated('agent-123', transcript);
+  }
+
+  void emitAgentState(String agentState) {
+    listener?.onAgentStateChanged('agent-123', agentState);
+  }
+}
+
 void main() {
   test('startConversation joins rtc and endConversation clears state', () async {
     final backendApi = FakeBackendApi();
     final rtcService = FakeRtcSessionService();
+    final rtmService = FakeRtmSessionService();
     final controller = ConversationSessionController(
       config: const AppConfig(
         agoraAppId: 'test-app-id',
@@ -126,6 +172,7 @@ void main() {
       ),
       backendApi: backendApi,
       rtcSessionService: rtcService,
+      rtmSessionService: rtmService,
       requestMicrophonePermission: () async {},
     );
 
@@ -137,12 +184,24 @@ void main() {
     expect(controller.state.agentResponse?.state, 'RUNNING');
     expect(backendApi.generateTokenCalls, 1);
     expect(backendApi.inviteAgentCalls, 1);
+    expect(rtmService.initialized, isTrue);
     expect(rtcService.initialized, isTrue);
     expect(rtcService.joined, isTrue);
     expect(rtcService.localUid, 123456);
 
+    rtmService.emitTranscript([
+      const TranscriptItem(
+        turnId: 'turn-1',
+        uid: 'agent-123',
+        text: 'Hello from the agent',
+        status: TranscriptTurnStatus.completed,
+      ),
+    ]);
+    rtmService.emitAgentState('listening');
     rtcService.emitRemoteJoin();
+
     expect(controller.state.remoteUid, 987654);
+    expect(controller.state.agentState, 'listening');
     expect(controller.state.transcript, isNotEmpty);
 
     await controller.endConversation();
@@ -151,6 +210,8 @@ void main() {
     expect(controller.state.transcript, isEmpty);
     expect(backendApi.stopConversationCalls, 1);
     expect(backendApi.stoppedAgentId, 'agent-123');
+    expect(rtmService.left, isTrue);
+    expect(rtmService.disposed, isTrue);
     expect(rtcService.left, isTrue);
     expect(rtcService.disposed, isTrue);
 

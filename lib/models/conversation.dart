@@ -8,6 +8,16 @@ extension TranscriptTurnStatusX on TranscriptTurnStatus {
         TranscriptTurnStatus.completed => 'COMPLETED',
         TranscriptTurnStatus.interrupted => 'INTERRUPTED',
       };
+
+  static TranscriptTurnStatus fromRaw(Object? raw) {
+    final normalized = raw?.toString().trim().toLowerCase();
+    return switch (normalized) {
+      'in_progress' || 'inprogress' => TranscriptTurnStatus.inProgress,
+      'interrupted' => TranscriptTurnStatus.interrupted,
+      'completed' || 'end' || 'ended' => TranscriptTurnStatus.completed,
+      _ => TranscriptTurnStatus.completed,
+    };
+  }
 }
 
 enum AgentVisualizerState {
@@ -51,6 +61,7 @@ class ConversationSessionState {
     this.localUid,
     this.remoteUid,
     this.connectionStatus,
+    this.agentState,
     this.isMicMuted = false,
     this.errorMessage,
   });
@@ -68,6 +79,7 @@ class ConversationSessionState {
   final int? localUid;
   final int? remoteUid;
   final String? connectionStatus;
+  final String? agentState;
   final bool isMicMuted;
   final String? errorMessage;
 
@@ -79,6 +91,7 @@ class ConversationSessionState {
     int? localUid,
     int? remoteUid,
     String? connectionStatus,
+    String? agentState,
     bool? isMicMuted,
     String? errorMessage,
   }) {
@@ -90,6 +103,7 @@ class ConversationSessionState {
       localUid: localUid ?? this.localUid,
       remoteUid: remoteUid ?? this.remoteUid,
       connectionStatus: connectionStatus ?? this.connectionStatus,
+      agentState: agentState ?? this.agentState,
       isMicMuted: isMicMuted ?? this.isMicMuted,
       errorMessage: errorMessage ?? this.errorMessage,
     );
@@ -231,6 +245,23 @@ class TranscriptItem {
   final String text;
   final TranscriptTurnStatus status;
   final int? createdAtMs;
+
+  factory TranscriptItem.fromJson(Map<String, Object?> json) {
+    final createdAt = json['createdAtMs'] ?? json['created_at_ms'] ?? json['timestamp'];
+    return TranscriptItem(
+      turnId: (json['turnId'] ?? json['turn_id'] ?? json['turnID'] ?? '')
+          .toString(),
+      uid: (json['uid'] ?? json['publisher'] ?? json['userId'] ?? '')
+          .toString(),
+      text: (json['text'] ?? json['message'] ?? '').toString(),
+      status: TranscriptTurnStatusX.fromRaw(json['status'] ?? json['state']),
+      createdAtMs: createdAt == null
+          ? null
+          : (createdAt is num
+              ? createdAt.toInt()
+              : int.tryParse(createdAt.toString())),
+    );
+  }
 
   TranscriptItem copyWith({
     String? turnId,

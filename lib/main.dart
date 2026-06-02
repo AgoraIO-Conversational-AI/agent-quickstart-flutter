@@ -6,6 +6,7 @@ import 'utils/conversation.dart';
 import 'services/backend_api.dart';
 import 'services/conversation_session_controller.dart';
 import 'services/rtc_session_service.dart';
+import 'services/rtm_session_service.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -107,6 +108,7 @@ class _LandingScreenState extends State<_LandingScreen> {
       config: config,
       backendApi: _backendApi,
       rtcSessionService: AgoraRtcSessionService(),
+      rtmSessionService: AgoraRtmSessionService(),
     )..addListener(_onControllerChanged);
   }
 
@@ -485,7 +487,7 @@ class _SessionCard extends StatelessWidget {
                 const SizedBox(height: 10),
                 _InfoPill(
                   label: 'Agent',
-                  value: state.agentResponse!.state,
+                  value: state.agentState ?? state.agentResponse!.state,
                 ),
               ],
               if (state.errorMessage != null) ...[

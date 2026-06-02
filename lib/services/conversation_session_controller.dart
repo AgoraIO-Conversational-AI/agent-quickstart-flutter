@@ -9,12 +9,14 @@ import '../models/conversation.dart';
 import '../utils/conversation.dart';
 import 'backend_api.dart';
 import 'rtc_session_service.dart';
+import 'rtm_session_service.dart';
 
 class ConversationSessionController extends ChangeNotifier {
   ConversationSessionController({
     required this._config,
     required this._backendApi,
     required this._rtcSessionService,
+    required this._rtmSessionService,
     Future<void> Function()? requestMicrophonePermission,
   })  : _requestMicrophonePermissionOverride = requestMicrophonePermission,
         _state = const ConversationSessionState.initial();
@@ -22,12 +24,14 @@ class ConversationSessionController extends ChangeNotifier {
   final AppConfig _config;
   final BackendApi _backendApi;
   final RtcSessionService _rtcSessionService;
+  final RtmSessionService _rtmSessionService;
   final Future<void> Function()? _requestMicrophonePermissionOverride;
   final Random _random = Random();
 
   ConversationSessionState _state;
   bool _isStarting = false;
   bool _isEnding = false;
+  bool _isRenewingToken = false;
 
   ConversationSessionState get state => _state;
   bool get isStarting => _isStarting;
@@ -62,9 +66,7 @@ class ConversationSessionController extends ChangeNotifier {
     try {
       await (_requestMicrophonePermissionOverride ?? _requestMicrophonePermission)();
 
-      final tokenData = await _backendApi.generateToken(
-        uid: _config.agentUid.toString(),
-      );
+      final tokenData = await _backendApi.generateToken();
       final agentResponse = await _backendApi.inviteAgent(
         ClientStartRequest(
           requesterId: tokenData.uid,
@@ -85,6 +87,21 @@ class ConversationSessionController extends ChangeNotifier {
         ),
       );
       _setState(sessionState);
+
+      await _rtmSessionService.initialize(
+        appId: _config.agoraAppId,
+        userId: tokenData.uid,
+        token: tokenData.token,
+        channelName: tokenData.channel,
+        listener: RtmSessionListener(
+          onConnected: _handleRtmConnected,
+          onDisconnected: _handleRtmDisconnected,
+          onTranscriptUpdated: _handleRtmTranscriptUpdated,
+          onAgentStateChanged: _handleRtmAgentStateChanged,
+          onTokenWillExpire: _handleTokenWillExpire,
+          onError: _handleRtmError,
+        ),
+      );
 
       await _rtcSessionService.initialize(
         appId: _config.agoraAppId,
@@ -151,7 +168,9 @@ class ConversationSessionController extends ChangeNotifier {
           StopConversationRequest(agentId: agentId),
         );
       }
+      await _rtmSessionService.leave();
       await _rtcSessionService.leave();
+      await _rtmSessionService.dispose();
       await _rtcSessionService.dispose();
       _setState(const ConversationSessionState.initial());
     } catch (error) {
@@ -220,8 +239,14 @@ class ConversationSessionController extends ChangeNotifier {
   }
 
   Future<void> _handleTokenWillExpire() async {
+    if (_isRenewingToken) {
+      return;
+    }
+
+    _isRenewingToken = true;
     final tokenData = _state.tokenData;
     if (tokenData == null) {
+      _isRenewingToken = false;
       return;
     }
 
@@ -230,6 +255,7 @@ class ConversationSessionController extends ChangeNotifier {
         uid: tokenData.uid,
         channel: tokenData.channel,
       );
+      await _rtmSessionService.renewToken(renewedToken.token);
       await _rtcSessionService.renewToken(renewedToken.token);
       _setState(
         _state.copyWith(
@@ -242,6 +268,8 @@ class ConversationSessionController extends ChangeNotifier {
       );
     } catch (error) {
       _handleRtcError('Token renewal failed: $error');
+    } finally {
+      _isRenewingToken = false;
     }
   }
 
@@ -297,6 +325,71 @@ class ConversationSessionController extends ChangeNotifier {
     );
   }
 
+  void _handleRtmConnected(String connectionState) {
+    _setState(
+      _state.copyWith(
+        connectionStatus: 'rtm $connectionState',
+        transcript: _appendTranscript(
+          _state.transcript,
+          'RTM connected.',
+        ),
+      ),
+    );
+  }
+
+  void _handleRtmDisconnected(String connectionState) {
+    _setState(
+      _state.copyWith(
+        connectionStatus: 'rtm $connectionState',
+        transcript: _appendTranscript(
+          _state.transcript,
+          'RTM disconnected.',
+        ),
+      ),
+    );
+  }
+
+  void _handleRtmTranscriptUpdated(
+    String agentUserId,
+    List<TranscriptItem> transcript,
+  ) {
+    _setState(
+      _state.copyWith(
+        agentState: _state.agentState,
+        transcript: normalizeTranscript(transcript, _state.tokenData?.uid ?? agentUserId),
+        connectionStatus: 'transcript updated',
+      ),
+    );
+  }
+
+  void _handleRtmAgentStateChanged(
+    String agentUserId,
+    String agentState,
+  ) {
+    _setState(
+      _state.copyWith(
+        agentState: agentState,
+        transcript: _appendTranscript(
+          _state.transcript,
+          'Agent state: ${normalizeTranscriptSpacing(agentState)}',
+        ),
+      ),
+    );
+  }
+
+  void _handleRtmError(String message) {
+    _setState(
+      _state.copyWith(
+        errorMessage: message,
+        phase: ConversationPhase.error,
+        transcript: _appendTranscript(
+          _state.transcript,
+          'RTM error: $message',
+        ),
+      ),
+    );
+  }
+
   List<TranscriptItem> _appendTranscript(
     List<TranscriptItem> transcript,
     String text,
@@ -315,10 +408,11 @@ class ConversationSessionController extends ChangeNotifier {
   }
 
   int _parseUid(String uid) {
-    if (uid == '0') {
-      return _config.agentUid;
+    final parsed = int.tryParse(uid);
+    if (parsed == null || parsed <= 0) {
+      throw StateError('Invalid Agora uid returned by backend: $uid');
     }
-    return int.tryParse(uid) ?? _config.agentUid;
+    return parsed;
   }
 
   void _setState(ConversationSessionState nextState) {
@@ -328,6 +422,7 @@ class ConversationSessionController extends ChangeNotifier {
 
   @override
   void dispose() {
+    unawaited(_rtmSessionService.dispose());
     unawaited(_rtcSessionService.dispose());
     super.dispose();
   }

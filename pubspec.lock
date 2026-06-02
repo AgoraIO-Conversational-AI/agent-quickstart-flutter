@@ -5,10 +5,18 @@ packages:
     dependency: "direct main"
     description:
       name: agora_rtc_engine
-      sha256: d9a88129b8fdc36ec5246331f36486b198dd7eb41ee68bfb54b289be8d60c6df
+      sha256: "6559294d18ce4445420e19dbdba10fb58cac955cd8f22dbceae26716e194d70e"
       url: "https://pub.dev"
     source: hosted
-    version: "6.6.3"
+    version: "6.5.3"
+  agora_rtm:
+    dependency: "direct main"
+    description:
+      name: agora_rtm
+      sha256: "12acd619daca443bd17644328873fab526a47a2c32870e7bfd4511f961aec8fa"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.2.6"
   async:
     dependency: transitive
     description:
@@ -61,10 +69,10 @@ packages:
     dependency: transitive
     description:
       name: ffi
-      sha256: "6d7fd89431262d8f3125e81b50d3847a091d846eafcd4fdb88dd06f36d705a45"
+      sha256: "13a6ccf6a459a125b3fcdb6ec73bd5ff90822e071207c663bfd1f70062d51d18"
       url: "https://pub.dev"
     source: hosted
-    version: "2.2.0"
+    version: "1.2.1"
   flutter:
     dependency: "direct main"
     description: flutter
@@ -116,10 +124,10 @@ packages:
     dependency: transitive
     description:
       name: js
-      sha256: f2c445dce49627136094980615a031419f7f3eb393237e4ecd97ac15dea343f3
+      sha256: "53385261521cc4a0c4658fd0ad07a7d14591cf8fc33abbceae306ddb974888dc"
       url: "https://pub.dev"
     source: hosted
-    version: "0.6.7"
+    version: "0.7.2"
   json_annotation:
     dependency: transitive
     description:

@@ -1,6 +1,6 @@
 # Agora Conversational AI Flutter Quickstart - Repo Card
 
-> Flutter quickstart for building browser and mobile voice AI experiences with Agora Conversational AI Engine.
+> Flutter quickstart for duplicating the Agora Conversational AI reference experience in a Flutter app.
 
 ## Identity
 
@@ -28,4 +28,3 @@
 | [06_interfaces](L1/06_interfaces.md) | API contracts, event payloads, env contracts | Use & Maintain |
 | [07_gotchas](L1/07_gotchas.md) | High-impact pitfalls and known failure modes | Maintain |
 | [08_security](L1/08_security.md) | Secret handling, trust boundaries, auth/token model | Maintain |
-

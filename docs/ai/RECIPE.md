@@ -21,7 +21,7 @@ stable_contracts:
 
 # Quickstart Recipe Profile
 
-This repository is the Flutter migration baseline for the Agora Conversational AI quickstart.
+This repository is the Flutter counterpart baseline for the Agora Conversational AI quickstart.
 
 ## Recipe Role
 
@@ -74,4 +74,3 @@ Do not rebuild Agora integration from memory. Verify provider schemas, token beh
 3. Run the narrowest verification commands first.
 4. Validate the end-to-end session before expanding the UI.
 5. Customize agent behavior only after the baseline flow works.
-

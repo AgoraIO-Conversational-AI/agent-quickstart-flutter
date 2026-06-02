@@ -13,7 +13,7 @@ Use progressive disclosure so future work stays low-context:
 
 ## Start Here
 
-- Treat this repository as the Flutter migration of the Next.js quickstart.
+- Treat this repository as the Flutter counterpart to the Next.js quickstart.
 - Keep changes small and commit-sized.
 - Prefer the smallest implementation that preserves the end-to-end contract.
 - If a repeated workflow would benefit from a custom skill or MCP server, add it only after the need is proven.
@@ -57,4 +57,3 @@ Use progressive disclosure so future work stays low-context:
 
 - Branch names: `codex/<short-description>`.
 - Commit messages: conventional commits such as `docs:`, `feat:`, `fix:`, or `chore:`.
-

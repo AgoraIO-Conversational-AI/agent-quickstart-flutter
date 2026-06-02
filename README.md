@@ -210,6 +210,7 @@ The base quickstart defaults to Agora-managed inference. If we add BYOK support 
 - [`backend/`](./backend/) - Node backend companion for token, invite, and stop routes
 - [`web/index.html`](./web/index.html) - web bootstrap that loads the Agora RTC and RTM browser SDKs
 - [`docs/ai/`](./docs/ai/) - progressive-disclosure docs for agents
+- [`docs/agora-supported-mllm/`](./docs/agora-supported-mllm/) - implementation guides for Agora-supported MLLM setups such as Google Gemini Live
 - [`AGENTS.md`](./AGENTS.md) - primary agent-facing guide
 - [`android/`](./android/) - Android host app
 - [`ios/`](./ios/) - iOS host app

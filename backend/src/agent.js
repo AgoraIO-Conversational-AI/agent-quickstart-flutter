@@ -67,7 +67,7 @@ export async function handleInviteAgent(request) {
     });
 
     const agent = new Agent({
-      name: `conversation-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
+      client,
       instructions: ADA_PROMPT,
       greeting: getAgentGreeting(),
       failureMessage: 'Please wait a moment.',
@@ -123,7 +123,7 @@ export async function handleInviteAgent(request) {
         }),
       );
 
-    const session = agent.createSession(client, {
+    const session = agent.createSession({
       channel: channel_name,
       agentUid: process.env.NEXT_PUBLIC_AGENT_UID ?? String(DEFAULT_AGENT_UID),
       remoteUids: [requester_id],

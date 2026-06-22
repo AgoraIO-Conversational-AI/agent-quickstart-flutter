@@ -6,15 +6,17 @@ Build a production-style voice agent in Flutter with the Agora Conversational AI
 
 See the quickstart in action:
 
-- Demo video: [Screen Recording 2026-06-22 at 1.32.56 PM.mov](./art/Screen%20Recording%202026-06-22%20at%201.32.56%E2%80%AFPM.mov)
+- Demo video: [Open the screen recording](./art/demo-conversation.mov)
+
+[![Demo video thumbnail](./art/demo-screenshot-1.png)](./art/demo-conversation.mov)
 
 Screenshots:
 
-![Conversation UI screenshot 1](./art/Screenshot%202026-06-22%20at%201.34.36%20PM.png)
+![Conversation UI screenshot 1](./art/demo-screenshot-1.png)
 
-![Conversation UI screenshot 2](./art/Screenshot%202026-06-22%20at%201.34.48%20PM.png)
+![Conversation UI screenshot 2](./art/demo-screenshot-2.png)
 
-![Conversation UI screenshot 3](./art/Screenshot%202026-06-22%20at%201.35.01%20PM.png)
+![Conversation UI screenshot 3](./art/demo-screenshot-3.png)
 
 ## Prerequisites
 

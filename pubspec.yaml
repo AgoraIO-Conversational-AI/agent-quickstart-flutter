@@ -4,15 +4,16 @@ publish_to: 'none'
 version: 0.1.0+1
 
 environment:
-  sdk: ^3.12.1
+  sdk: ^3.13.5
+  flutter: '>=3.47.7'
 
 dependencies:
   flutter:
     sdk: flutter
-  agora_rtc_engine: ^6.6.3
-  agora_rtm: ^2.2.0
+  agora_rtc_engine: ^6.6.4
+  agora_rtm: ^2.2.6
   http: ^1.6.0
-  permission_handler: ^11.3.1
+  permission_handler: ^13.0.2
 
 dev_dependencies:
   flutter_test:

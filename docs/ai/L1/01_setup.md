@@ -4,8 +4,11 @@
 
 ## Runtime Requirements
 
-- Flutter stable SDK.
-- Dart SDK matching the Flutter channel.
+- Flutter 3.47.7 or newer stable SDK, with Dart 3.13.5 or newer.
+- Android builds use AGP 9.4.1, Gradle 9.8.2, Kotlin 2.4.21, and JDK 17 or newer.
+- Android compile/target SDK is 37 (Android 17); minimum SDK follows Flutter (24).
+- iOS deployment target is 15.0, matching the current Flutter minimum.
+- iOS uses Swift Package Manager with CocoaPods fallback for `agora_rtm`; keep the generated native lockfiles aligned with the Flutter plugins.
 - Agora project with Conversational AI enabled.
 - A backend surface for token, invite, and stop operations.
 

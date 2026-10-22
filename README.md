@@ -20,8 +20,10 @@ Screenshots:
 
 ## Prerequisites
 
-- [Flutter](https://flutter.dev/docs/get-started/install)
-- [Dart](https://dart.dev/get-dart)
+- [Flutter 3.47.7 or newer stable](https://flutter.dev/docs/get-started/install)
+- [Dart 3.13.5 or newer](https://dart.dev/get-dart) (bundled with Flutter)
+- Android: SDK 37 to build; Android 7.0 (API 24) or newer to run
+- iOS: Xcode with the iOS platform installed, CocoaPods, and iOS 15.0 or newer
 - [Node.js 22+](https://nodejs.org/)
 - [npm](https://www.npmjs.com/) or another Node package manager
 - [Agora CLI](https://github.com/AgoraIO-Community/cli)
